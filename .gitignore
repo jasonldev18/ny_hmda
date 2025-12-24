@@ -1,0 +1,4 @@
+
+# HMDA raw data
+*.csv
+*.csv.gz
