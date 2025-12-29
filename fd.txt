@@ -1,0 +1,51 @@
+Normalized Relations Derived from Functional Dependencies in the LAR Record
+
+
+
+RESPONDENT INFORMATION
+
+Schema Respondent_info
+
+Respondent_info.agency(agency_code, agency_name)
+Respondent_info.agency_name(agency_name, agency_abbr)
+Respondent_info.edit_status(edit_status, edit_status_name)
+
+
+
+PROPERTY LOCATION
+
+Schema Property_location
+
+Property_location.msamd(msamd, msamd_name)
+Property_location.state(state_code, state_name, state_abbr)  *States are unique, BCNF is not violated
+Property_location.county(county_code, county_name)
+Property_location.tract(location_id, msamd, state_code, county_code, census_tract_number, population, minority_population, hud_median_family_income, tract_to_msamd_income, number_of_owner_occupied_units, number_of_1_to_4_family_units)
+
+
+
+LOAN INFORMATION
+
+Schema Loan_info
+
+Loan_info.type(loan_type, loan_name)
+Loan_info.property(property_type, property_type_name)
+Loan_info.purpose(loan_purpose, loan_name)
+Loan_info.occupancy(owner_occupancy, owner_occupancy_name)
+Loan_info.preapproval(preapproval, preapproval_name)
+Loan_info.action(action_taken, action_taken_name)
+
+
+
+APPLICANT INFORMATION
+
+Schema Applicant_info
+
+Applicant_info.applicant_ethnicity(applicant_ethnicity, applicant_ethnicity_name)
+Applicant_info.co_applicant_ethnicity(co_applicant_ethnicity, co_applicant_ethnicity_name)
+Applicant_info.applicant_race(appl)
+
+PURCHASER AND DENIAL INFORMATION
+
+OTHER DATA
+
+CENSUS INFORMATION

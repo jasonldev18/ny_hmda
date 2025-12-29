@@ -83,4 +83,7 @@ CREATE TABLE hmda_table (
 
 \copy FROM '/common/home/jl3086/hmdaproj/hmda_2017_ny_all-records_labels.csv' DELIMITER ',' CSV HEADER;
 ALTER TABLE hmda_table
-ADD COLUMN ID SERIAL PRIMARY KEY;
+ADD COLUMN ID SERIAL PRIMARY KEY; -- serial auto increments, primary key enforces not null and uniqueness
+
+
+
