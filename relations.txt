@@ -42,10 +42,30 @@ Schema Applicant_info
 
 Applicant_info.applicant_ethnicity(applicant_ethnicity, applicant_ethnicity_name)
 Applicant_info.co_applicant_ethnicity(co_applicant_ethnicity, co_applicant_ethnicity_name)
-Applicant_info.applicant_race(appl)
+
+<!-- Combined race columns (applicant_race_1, applicant_race_2, etc) into rows. This allows an applicant to have multiple races -->
+Applicant_info.applicant_race(applicant_id, applicant_race, applicant_race_number)
+Applicant_info.co_applicant_race_(co_applicant_id, co_applicant_race, co_applicant_race_number)
+Applicant_info.race_code(applicant_race, race_name)
+Applicant_info.applicant_sex(applicant_sex, applicant_sex_name)
+Applicant_info.co_applicant_sex(co_applicant_sex, co_applicant_sex_name) 
+
+
 
 PURCHASER AND DENIAL INFORMATION
 
+Schema Purchaser_and_denial_info
+
+Purchaser_and_denial_info.type(purchaser_type, purchaser_type_name)
+Purchaser_and_denial_info.denial_reason_1(denial_reason_1,denial_reason_name_1)
+Purchaser_and_denial_info.denial_reason_2(denial_reason_2,denial_reason_name_2)
+Purchaser_and_denial_info.denial_reason_3(denial_reason_3,denial_reason_name_3)
+
+
+
 OTHER DATA
 
-CENSUS INFORMATION
+Schema Other
+
+Other.hoepa_status(hoepa_status, hoepa_status_name)
+Other.lien_status(lien_status, lien_status_name)
