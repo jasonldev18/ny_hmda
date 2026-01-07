@@ -6,8 +6,7 @@ RESPONDENT INFORMATION
 
 Schema Respondent_info
 
-Respondent_info.agency(agency_code, agency_name)
-Respondent_info.agency_name(agency_name, agency_abbr)
+Respondent_info.agency(agency_code, agency_name, agency_abbr)
 Respondent_info.edit_status(edit_status, edit_status_name)
 
 
