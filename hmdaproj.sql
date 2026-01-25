@@ -26,7 +26,7 @@ CREATE TABLE hmda_table (
     state_code   INT,
     county_name   VARCHAR(150),
     county_code   INT,
-    census_tract_number   INT,
+    census_tract_number   TEXT,
     applicant_ethnicity_name   VARCHAR(150),
     applicant_ethnicity   INT,
     co_applicant_ethnicity_name   VARCHAR(150),
@@ -73,9 +73,9 @@ CREATE TABLE hmda_table (
     edit_status  VARCHAR(150),
     sequence_number  VARCHAR(150),
     population  VARCHAR(150),
-    minority_population  VARCHAR(150),
+    minority_population  DOUBLE PRECISION,
     hud_median_family_income  VARCHAR(150),
-    tract_to_msamd_income  VARCHAR(150),
+    tract_to_msamd_income  DOUBLE PRECISION,
     number_of_owner_occupied_units  VARCHAR(150),
     number_of_1_to_4_family_units  VARCHAR(150),
     application_date_indicator  VARCHAR(150),
@@ -84,7 +84,6 @@ CREATE TABLE hmda_table (
 \copy FROM '/common/home/jl3086/hmdaproj/hmda_2017_ny_all-records_labels.csv' DELIMITER ',' CSV HEADER;
 ALTER TABLE hmda_table
 ADD COLUMN ID SERIAL PRIMARY KEY; -- serial auto increments, primary key enforces not null and uniqueness
-
 
 -- Creating the tables based on normalized relations
 CREATE SCHEMA Respondent_info;
@@ -98,7 +97,7 @@ agency_abbr TEXT
 CREATE TABLE Respondent_info.edit_status(
 edit_status INT PRIMARY KEY,
 edit_status_name TEXT
-)
+);
 
 
 CREATE SCHEMA Property_location;
@@ -121,7 +120,21 @@ state_code INT,
 CONSTRAINT fk_state_code   -- Requires constraint because state -> county is a parent-child relation
     FOREIGN KEY (state_code)
     REFERENCES Property_location.state(state_code)
-)
+);
+
+CREATE TABLE Property_location.tract(
+location_id SERIAL PRIMARY KEY,  -- use SERIAL since it's a artificial key
+msamd INT,
+state_code INT,
+county_code INT,
+census_tract_number TEXT,
+population INT, 
+minority_population DOUBLE PRECISION,
+hud_median_family_income INT,
+tract_to_msamd_income DOUBLE PRECISION, 
+number_of_owner_occupied_units INT,
+number_of_1_to_4_family_units INT
+);
 
 CREATE SCHEMA Loan_info;
 
@@ -168,10 +181,72 @@ Co_applicant_ethnicity INT PRIMARY KEY,
 Co_applicant_ethnicity_name TEXT
 );
 
-CREATE TABLE Application_information.race (
-Applicant_race INT PRIMARY KEY,
-Applicant_race_name TEXT
+
+
+CREATE TABLE Application_information.race(
+race_code INT PRIMARY KEY,
+race_name TEXT
 );
+
+INSERT INTO Application_information.race(race_code, race_name)
+SELECT DISTINCT applicant_race_1::INT, applicant_race_name_1
+FROM hmda_table
+WHERE applicant_race_1 IS NOT NULL AND applicant_race_1 != ''
+UNION
+SELECT DISTINCT applicant_race_2::INT, applicant_race_name_2
+FROM hmda_table
+WHERE applicant_race_2 IS NOT NULL AND applicant_race_2 != ''
+UNION
+SELECT DISTINCT applicant_race_3::INT, applicant_race_name_3
+FROM hmda_table
+WHERE applicant_race_3 IS NOT NULL AND applicant_race_3 != ''
+UNION
+SELECT DISTINCT applicant_race_4::INT, applicant_race_name_4
+FROM hmda_table
+WHERE applicant_race_4 IS NOT NULL AND applicant_race_4 != ''
+UNION
+SELECT DISTINCT applicant_race_5::INT, applicant_race_name_5
+FROM hmda_table
+WHERE applicant_race_5 IS NOT NULL AND applicant_race_5 != '';
+
+CREATE TABLE Application_information.applicant_race(
+applicant_id INT,
+race_code INT,
+race_number INT, 
+PRIMARY KEY (applicant_id, race_number), -- allows multiple race for one applicant
+FOREIGN KEY (race_code) REFERENCES Application_information.race(race_code)
+);
+
+INSERT INTO Application_information.applicant_race(applicant_id, race_code, race_number)
+SELECT ID, applicant_race_1::INT, 1 FROM hmda_table WHERE applicant_race_1 IS NOT NULL AND applicant_race_1 != ''
+UNION ALL
+SELECT ID, applicant_race_2::INT, 2 FROM hmda_table WHERE applicant_race_2 IS NOT NULL AND applicant_race_2 != ''
+UNION ALL
+SELECT ID, applicant_race_3::INT, 3 FROM hmda_table WHERE applicant_race_3 IS NOT NULL AND applicant_race_3 != ''
+UNION ALL
+SELECT ID, applicant_race_4::INT, 4 FROM hmda_table WHERE applicant_race_4 IS NOT NULL AND applicant_race_4 != ''
+UNION ALL
+SELECT ID, applicant_race_5::INT, 5 FROM hmda_table WHERE applicant_race_5 IS NOT NULL AND applicant_race_5 != '';
+
+CREATE TABLE Application_information.co_applicant_race(
+applicant_id INT,
+race_code INT,
+race_number INT, 
+PRIMARY KEY (applicant_id, race_number),     
+FOREIGN KEY (race_code) REFERENCES Application_information.race(race_code)
+);
+
+INSERT INTO Application_information.co_applicant_race(applicant_id, race_code, race_number)
+SELECT ID, co_applicant_race_1::INT, 1 FROM hmda_table WHERE co_applicant_race_1 IS NOT NULL AND co_applicant_race_1 != ''
+UNION ALL
+SELECT ID, co_applicant_race_2::INT, 2 FROM hmda_table WHERE co_applicant_race_2 IS NOT NULL AND co_applicant_race_2 != ''
+UNION ALL
+SELECT ID, co_applicant_race_3::INT, 3 FROM hmda_table WHERE co_applicant_race_3 IS NOT NULL AND co_applicant_race_3 != ''
+UNION ALL
+SELECT ID, co_applicant_race_4::INT, 4 FROM hmda_table WHERE co_applicant_race_4 IS NOT NULL AND co_applicant_race_4 != ''
+UNION ALL
+SELECT ID, co_applicant_race_5::INT, 5 FROM hmda_table WHERE co_applicant_race_5 IS NOT NULL AND co_applicant_race_5 != '';
+
 
 
 CREATE TABLE Application_information.applicant_sex(
@@ -220,3 +295,118 @@ CREATE TABLE Other.lien_status(
 Lien_status INT PRIMARY KEY,
 Lien_status_name TEXT
 );
+
+
+INSERT INTO Respondent_info.agency(agency_code, agency_name, agency_abbr)
+SELECT DISTINCT agency_code, agency_name, agency_abbr
+FROM hmda_table 
+WHERE agency_code IS NOT NULL;
+
+INSERT INTO Respondent_info.edit_status(edit_status, edit_status_name)
+SELECT DISTINCT edit_status, edit_status_name
+FROM hmda_table
+WHERE edit_status IS NOT NULL;
+
+INSERT INTO Property_location.msamd(msamd, msamd_name)
+SELECT DISTINCT msamd, msamd_name
+FROM hmda_table
+WHERE msamd IS NOT NULL;
+
+INSERT INTO Property_location.state(state_code, state_name, state_abbr)
+SELECT DISTINCT state_code, state_name, state_abbr
+FROM hmda_table
+WHERE state_code IS NOT NULL;
+
+INSERT INTO Property_location.county_code(county_code, county_name, state_code)
+SELECT DISTINCT county_code, county_name, state_code
+FROM hmda_table
+WHERE county_code IS NOT NULL;
+
+INSERT INTO Property_location.tract(
+msamd, state_code, county_code, census_tract_number, population, minority_population, hud_median_family_income, tract_to_msamd_income, number_of_owner_occupied_units, number_of_1_to_4_family_units)
+SELECT DISTINCT h.msamd, c.state_code, h.county_code, h.census_tract_number, h.population, h.minority_population, h.hud_median_family_income, h.tract_to_msamd_income, h.number_of_owner_occupied_units, h.number_of_1_to_4_family_units
+FROM hmda_table h
+JOIN Property_location.county_code c ON h.county_code = c.county_code;
+
+
+INSERT INTO Loan_info.loan_type(Loan_type, Loan_type_name)
+SELECT DISTINCT Loan_type, Loan_type_name
+FROM hmda_table
+WHERE Loan_type IS NOT NULL;
+
+INSERT INTO Loan_info.property(Property_type, Property_type_name)
+SELECT DISTINCT Property_type, Property_type_name
+FROM hmda_table
+WHERE Property_type IS NOT NULL;
+
+INSERT INTO Loan_info.purpose(Loan_purpose, Loan_purpose_name)
+SELECT DISTINCT Loan_purpose, Loan_purpose_name
+FROM hmda_table
+WHERE Loan_purpose IS NOT NULL;
+
+INSERT INTO Loan_info.owner_occupancy(Owner_occupancy, Owner_occupancy_name)
+SELECT DISTINCT Owner_occupancy, Owner_occupancy_name
+FROM hmda_table
+WHERE Owner_occupancy IS NOT NULL;
+
+INSERT INTO Loan_info.preapproval(Preapproval, Preapproval_name)
+SELECT DISTINCT Preapproval, Preapproval_name
+FROM hmda_table
+WHERE Preapproval IS NOT NULL;
+
+INSERT INTO Loan_info.action_taken(Action_taken, Action_taken_name)
+SELECT DISTINCT Action_taken, Action_taken_name
+FROM hmda_table
+WHERE Action_taken IS NOT NULL;
+
+INSERT INTO Application_information.applicant_ethnicity(Applicant_ethnicity, Applicant_ethnicity_name)
+SELECT DISTINCT Applicant_ethnicity, Applicant_ethnicity_name
+FROM hmda_table
+WHERE Applicant_ethnicity IS NOT NULL;
+
+INSERT INTO Application_information.co_applicant_ethnicity(Co_applicant_ethnicity, Co_applicant_ethnicity_name)
+SELECT DISTINCT Co_applicant_ethnicity, Co_applicant_ethnicity_name
+FROM hmda_table
+WHERE Co_applicant_ethnicity IS NOT NULL;
+
+INSERT INTO Application_information.applicant_sex(Applicant_sex, Applicant_sex_name)
+SELECT DISTINCT Applicant_sex, Applicant_sex_name
+FROM hmda_table
+WHERE Applicant_sex IS NOT NULL;
+
+INSERT INTO Application_information.co_applicant_sex(Co_applicant_sex, Co_applicant_sex_name)
+SELECT DISTINCT Co_applicant_sex, Co_applicant_sex_name
+FROM hmda_table
+WHERE Co_applicant_sex IS NOT NULL;
+
+INSERT INTO Purchaser_and_denial_information.type(Purchaser_type, Purchaser_type_name)
+SELECT DISTINCT Purchaser_type, Purchaser_type_name
+FROM hmda_table
+WHERE Purchaser_type IS NOT NULL;
+
+INSERT INTO Purchaser_and_denial_information.denial_reason_1(Denial_reason_1, Denial_reason_1_name)
+SELECT DISTINCT Denial_reason_1, Denial_reason_1_name
+FROM hmda_table
+WHERE Denial_reason_1 IS NOT NULL;
+
+INSERT INTO Purchaser_and_denial_information.denial_reason_2(Denial_reason_2, Denial_reason_2_name)
+SELECT DISTINCT Denial_reason_2, Denial_reason_2_name
+FROM hmda_table
+WHERE Denial_reason_2 IS NOT NULL;
+
+INSERT INTO Purchaser_and_denial_information.denial_reason_3(Denial_reason_3, Denial_reason_3_name)
+SELECT DISTINCT Denial_reason_3, Denial_reason_3_name
+FROM hmda_table
+WHERE Denial_reason_3 IS NOT NULL;
+
+INSERT INTO Other.hoepa_status(Hoepa_status, Hoepa_status_name)
+SELECT DISTINCT Hoepa_status, Hoepa_status_name
+FROM hmda_table
+WHERE Hoepa_status IS NOT NULL;
+
+INSERT INTO Other.lien_status(Lien_status, Lien_status_name)
+SELECT DISTINCT Lien_status, Lien_status_name
+FROM hmda_table
+WHERE Lien_status IS NOT NULL;
+ 
+

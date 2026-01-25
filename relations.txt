@@ -44,7 +44,7 @@ Applicant_info.co_applicant_ethnicity(co_applicant_ethnicity, co_applicant_ethni
 
 <!-- Combined race columns (applicant_race_1, applicant_race_2, etc) into rows. This allows an applicant to have multiple races -->
 Applicant_info.applicant_race(applicant_id, applicant_race, applicant_race_number)
-Applicant_info.co_applicant_race_(co_applicant_id, co_applicant_race, co_applicant_race_number)
+Applicant_info.co_applicant_race(co_applicant_id, co_applicant_race, co_applicant_race_number)
 Applicant_info.race_code(applicant_race, race_name)
 Applicant_info.applicant_sex(applicant_sex, applicant_sex_name)
 Applicant_info.co_applicant_sex(co_applicant_sex, co_applicant_sex_name) 
