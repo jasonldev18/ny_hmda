@@ -1,3 +1,7 @@
+-- ==========================================
+-- PRELIMINARY TABLE: Load raw CSV data
+-- ==========================================
+
 DROP TABLE IF EXISTS hmda_table;
 
 CREATE TABLE hmda_table (
@@ -85,9 +89,13 @@ CREATE TABLE hmda_table (
 ALTER TABLE hmda_table
 ADD COLUMN ID SERIAL PRIMARY KEY; -- serial auto increments, primary key enforces not null and uniqueness
 
--- Creating the tables based on normalized relations
-CREATE SCHEMA Respondent_info;
 
+-- ==========================================
+-- SCHEMA AND TABLE DEFINITIONS
+-- ==========================================
+
+
+CREATE SCHEMA Respondent_info;
 CREATE TABLE Respondent_info.agency(
 agency_code INT PRIMARY KEY,
 agency_name TEXT,
@@ -297,6 +305,10 @@ Lien_status_name TEXT
 );
 
 
+-- ==========================================
+-- DATA POPULATION
+-- ==========================================
+
 INSERT INTO Respondent_info.agency(agency_code, agency_name, agency_abbr)
 SELECT DISTINCT agency_code, agency_name, agency_abbr
 FROM hmda_table 
@@ -410,3 +422,89 @@ FROM hmda_table
 WHERE Lien_status IS NOT NULL;
  
 
+-- ==========================================
+-- MAIN APPLICATION TABLE
+-- ==========================================
+
+CREATE TABLE application (
+    id INT PRIMARY KEY,
+    as_of_year INT,
+    respondent_id TEXT,
+    agency_code INT REFERENCES Respondent_info.agency(agency_code),
+    loan_type INT REFERENCES Loan_info.loan_type(loan_type),
+    property_type INT REFERENCES Loan_info.property(property_type),
+    loan_purpose INT REFERENCES Loan_info.purpose(loan_purpose),
+    owner_occupancy INT REFERENCES Loan_info.owner_occupancy(owner_occupancy),
+    loan_amount_000s INT,
+    preapproval INT REFERENCES Loan_info.preapproval(preapproval),
+    action_taken INT REFERENCES Loan_info.action_taken(action_taken),
+    location_id INT REFERENCES Property_location.tract(location_id),
+    applicant_ethnicity INT REFERENCES Application_information.applicant_ethnicity(applicant_ethnicity),
+    co_applicant_ethnicity INT REFERENCES Application_information.co_applicant_ethnicity(co_applicant_ethnicity),
+    applicant_sex INT REFERENCES Application_information.applicant_sex(applicant_sex),
+    co_applicant_sex INT REFERENCES Application_information.co_applicant_sex(co_applicant_sex),
+    applicant_income_000s INT,
+    purchaser_type INT REFERENCES Purchaser_and_denial_information.type(purchaser_type),
+    denial_reason_1 INT REFERENCES Purchaser_and_denial_information.denial_reason_1(denial_reason_1),
+    denial_reason_2 INT REFERENCES Purchaser_and_denial_information.denial_reason_2(denial_reason_2),
+    denial_reason_3 INT REFERENCES Purchaser_and_denial_information.denial_reason_3(denial_reason_3),
+    rate_spread TEXT,
+    hoepa_status INT REFERENCES Other.hoepa_status(hoepa_status),
+    lien_status INT REFERENCES Other.lien_status(lien_status),
+    edit_status INT REFERENCES Respondent_info.edit_status(edit_status),
+    sequence_number INT,
+    application_date_indicator INT
+);
+
+
+-- ==========================================
+-- POPULATE MAIN APP TABLE
+-- ==========================================
+
+INSERT INTO application(
+    id, as_of_year, respondent_id, agency_code, loan_type, property_type,
+    loan_purpose, owner_occupancy, loan_amount_000s, preapproval, action_taken,
+    location_id, applicant_ethnicity, co_applicant_ethnicity, applicant_sex,
+    co_applicant_sex, applicant_income_000s, purchaser_type, denial_reason_1,
+    denial_reason_2, denial_reason_3, rate_spread, hoepa_status, lien_status,
+    edit_status, sequence_number, application_date_indicator
+)
+SELECT 
+    h.id,
+    h.as_of_year::INT,
+    h.respondent_id,
+    h.agency_code,
+    h.loan_type,
+    h.property_type,
+    h.loan_purpose,
+    h.owner_occupancy,
+    h.loan_amount_000s,
+    h.preapproval,
+    h.action_taken,
+    t.location_id,
+    h.applicant_ethnicity,
+    h.co_applicant_ethnicity,
+    h.applicant_sex::INT,
+    h.co_applicant_sex::INT,
+    h.applicant_income_000s::INT,
+    h.purchaser_type::INT,
+    h.denial_reason_1::INT,
+    h.denial_reason_::INT,
+    h.denial_reason_3::INT,
+    h.rate_spread,
+    h.hoepa_status::INT,
+    h.lien_status::INT,
+    h.edit_status::INT,
+    h.sequence_number::INT,
+    h.application_date_indicator::INT
+FROM hmda_table h
+JOIN Property_location.tract t
+    ON h.msamd IS NOT DISTINCT FROM t.msamd
+    AND h.county_code = t.county_code
+    AND h.census_tract_number IS NOT DISTINCT FROM t.census_tract_number
+    AND h.population::INT IS NOT DISTINCT FROM t.population
+    AND h.minority_population IS NOT DISTINCT FROM t.minority_population
+    AND h.hud_median_family_income::INT IS NOT DISTINCT FROM t.hud_median_family_income
+    AND h.tract_to_msamd_income IS NOT DISTINCT FROM t.tract_to_msamd_income
+    AND h.number_of_owner_occupied_units::INT IS NOT DISTINCT FROM t.number_of_owner_occupied_units
+    AND h.number_of_1_to_4_family_units::INT IS NOT DISTINCT FROM t.number_of_1_to_4_family_units;
