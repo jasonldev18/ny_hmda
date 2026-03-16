@@ -296,17 +296,17 @@ Purchaser_type_name TEXT
 
 CREATE TABLE Purchaser_and_denial_information.denial_reason_1(
 Denial_reason_1 INT PRIMARY KEY,
-Denial_reason_1_name TEXT
+Denial_reason_name_1 TEXT
 ); 
 
 CREATE TABLE Purchaser_and_denial_information.denial_reason_2(
 Denial_reason_2 INT PRIMARY KEY,
-Denial_reason_2_name TEXT
+Denial_reason_name_2 TEXT
 );
 
 CREATE TABLE Purchaser_and_denial_information.denial_reason_3(
 Denial_reason_3 INT PRIMARY KEY,
-Denial_reason_3_name TEXT
+Denial_reason_name_3 TEXT
 );
 
 
@@ -335,12 +335,12 @@ WHERE agency_code IS NOT NULL;
 INSERT INTO Respondent_info.edit_status(edit_status, edit_status_name)
 SELECT DISTINCT edit_status::INT, edit_status_name
 FROM hmda_table
-WHERE edit_status IS NOT NULL;
+WHERE edit_status IS NOT NULL AND edit_status != '';
 
 INSERT INTO Property_location.msamd(msamd, msamd_name)
 SELECT DISTINCT msamd::INT, msamd_name
 FROM hmda_table
-WHERE msamd IS NOT NULL;
+WHERE msamd IS NOT NULL AND msamd != '';
 
 INSERT INTO Property_location.state(state_code, state_name, state_abbr)
 SELECT DISTINCT state_code::INT, state_name, state_abbr
@@ -350,24 +350,25 @@ WHERE state_code IS NOT NULL;
 INSERT INTO Property_location.county_code(county_code, county_name, state_code)
 SELECT DISTINCT county_code::INT, county_name, state_code::INT
 FROM hmda_table
-WHERE county_code IS NOT NULL;
+WHERE county_code IS NOT NULL AND county_code != '';
 
 INSERT INTO Property_location.tract(
 msamd, state_code, county_code, census_tract_number, population, minority_population, hud_median_family_income, tract_to_msamd_income, number_of_owner_occupied_units, number_of_1_to_4_family_units)
 SELECT DISTINCT 
-    h.msamd::INT,
+    NULLIF(h.msamd, '')::INT,
     c.state_code, 
-    h.county_code::INT, 
+    NULLIF(h.county_code, '')::INT, 
     h.census_tract_number, 
-    h.population::INT, 
-    h.minority_population::DOUBLE PRECISION, 
-    h.hud_median_family_income::INT, 
-    h.tract_to_msamd_income::DOUBLE PRECISION, 
-    h.number_of_owner_occupied_units::INT, 
-    h.number_of_1_to_4_family_units::INT
+    NULLIF(h.population, '')::INT, 
+    NULLIF(h.minority_population, '')::DOUBLE PRECISION, 
+    NULLIF(h.hud_median_family_income, '')::INT, 
+    NULLIF(h.tract_to_msamd_income, '')::DOUBLE PRECISION, 
+    NULLIF(h.number_of_owner_occupied_units, '')::INT, 
+    NULLIF(h.number_of_1_to_4_family_units, '')::INT
 FROM hmda_table h
-JOIN Property_location.county_code c ON h.county_code::INT = c.county_code;
-
+JOIN Property_location.county_code c ON NULLIF(h.county_code, '')::INT = c.county_code
+WHERE h.county_code IS NOT NULL
+AND h.county_code != '';
 
 INSERT INTO Loan_info.loan_type(Loan_type, Loan_type_name)
 SELECT DISTINCT Loan_type::INT, Loan_type_name
@@ -424,20 +425,20 @@ SELECT DISTINCT Purchaser_type::INT, Purchaser_type_name
 FROM hmda_table
 WHERE Purchaser_type IS NOT NULL;
 
-INSERT INTO Purchaser_and_denial_information.denial_reason_1(Denial_reason_1, Denial_reason_1_name)
-SELECT DISTINCT Denial_reason_1::INT, Denial_reason_1_name
+INSERT INTO Purchaser_and_denial_information.denial_reason_1(Denial_reason_1, Denial_reason_name_1)
+SELECT DISTINCT Denial_reason_1::INT, Denial_reason_name_1
 FROM hmda_table
-WHERE Denial_reason_1 IS NOT NULL;
+WHERE Denial_reason_1 IS NOT NULL AND Denial_reason_1 != '';
 
-INSERT INTO Purchaser_and_denial_information.denial_reason_2(Denial_reason_2, Denial_reason_2_name)
-SELECT DISTINCT Denial_reason_2::INT, Denial_reason_2_name
+INSERT INTO Purchaser_and_denial_information.denial_reason_2(Denial_reason_2, Denial_reason_name_2)
+SELECT DISTINCT Denial_reason_2::INT, Denial_reason_name_2
 FROM hmda_table
-WHERE Denial_reason_2 IS NOT NULL;
+WHERE Denial_reason_2 IS NOT NULL AND Denial_reason_2 != '';
 
-INSERT INTO Purchaser_and_denial_information.denial_reason_3(Denial_reason_3, Denial_reason_3_name)
-SELECT DISTINCT Denial_reason_3::INT, Denial_reason_3_name
+INSERT INTO Purchaser_and_denial_information.denial_reason_3(Denial_reason_3, Denial_reason_name_3)
+SELECT DISTINCT Denial_reason_3::INT, Denial_reason_name_3
 FROM hmda_table
-WHERE Denial_reason_3 IS NOT NULL;
+WHERE Denial_reason_3 IS NOT NULL AND Denial_reason_3 != '';
 
 INSERT INTO Other.hoepa_status(Hoepa_status, Hoepa_status_name)
 SELECT DISTINCT Hoepa_status::INT, Hoepa_status_name
@@ -499,40 +500,35 @@ INSERT INTO application(
 )
 SELECT 
     h.id,
-    h.as_of_year::INT,
+    NULLIF(h.as_of_year, '')::INT,
     h.respondent_id,
-    h.agency_code::INT,
-    h.loan_type::INT,
-    h.property_type::INT,
-    h.loan_purpose::INT,
-    h.owner_occupancy::INT,
-    h.loan_amount_000s::INT,
-    h.preapproval::INT,
-    h.action_taken::INT,
+    NULLIF(h.agency_code, '')::INT,
+    NULLIF(h.loan_type, '')::INT,
+    NULLIF(h.property_type, '')::INT,
+    NULLIF(h.loan_purpose, '')::INT,
+    NULLIF(h.owner_occupancy, '')::INT,
+    NULLIF(h.loan_amount_000s, '')::INT,
+    NULLIF(h.preapproval, '')::INT,
+    NULLIF(h.action_taken, '')::INT,
     t.location_id,
-    h.applicant_ethnicity::INT,
-    h.co_applicant_ethnicity::INT,
-    h.applicant_sex::INT,
-    h.co_applicant_sex::INT,
-    h.applicant_income_000s::INT,
-    h.purchaser_type::INT,
-    h.denial_reason_1::INT,
-    h.denial_reason_2::INT,
-    h.denial_reason_3::INT,
+    NULLIF(h.applicant_ethnicity, '')::INT,
+    NULLIF(h.co_applicant_ethnicity, '')::INT,
+    NULLIF(h.applicant_sex, '')::INT,
+    NULLIF(h.co_applicant_sex, '')::INT,
+    NULLIF(h.applicant_income_000s, '')::INT,
+    NULLIF(h.purchaser_type, '')::INT,
+    NULLIF(h.denial_reason_1, '')::INT,
+    NULLIF(h.denial_reason_2, '')::INT,
+    NULLIF(h.denial_reason_3, '')::INT,
     h.rate_spread,
-    h.hoepa_status::INT,
-    h.lien_status::INT,
-    h.edit_status::INT,
-    h.sequence_number::INT,
-    h.application_date_indicator::INT
+    NULLIF(h.hoepa_status, '')::INT,
+    NULLIF(h.lien_status, '')::INT,
+    NULLIF(h.edit_status, '')::INT,
+    NULLIF(h.sequence_number, '')::INT,
+    NULLIF(h.application_date_indicator, '')::INT
 FROM hmda_table h
 JOIN Property_location.tract t
-    ON h.msamd::INT IS NOT DISTINCT FROM t.msamd
-    AND h.county_code::INT = t.county_code
-    AND h.census_tract_number IS NOT DISTINCT FROM t.census_tract_number
-    AND h.population::INT IS NOT DISTINCT FROM t.population
-    AND h.minority_population::DOUBLE PRECISION IS NOT DISTINCT FROM t.minority_population
-    AND h.hud_median_family_income::INT IS NOT DISTINCT FROM t.hud_median_family_income
-    AND h.tract_to_msamd_income::DOUBLE PRECISION IS NOT DISTINCT FROM t.tract_to_msamd_income
-    AND h.number_of_owner_occupied_units::INT IS NOT DISTINCT FROM t.number_of_owner_occupied_units
-    AND h.number_of_1_to_4_family_units::INT IS NOT DISTINCT FROM t.number_of_1_to_4_family_units;
+    ON NULLIF(h.msamd, '')::INT IS NOT DISTINCT FROM t.msamd
+    AND NULLIF(h.state_code, '')::INT IS NOT DISTINCT FROM t.state_code
+    AND NULLIF(h.county_code, '')::INT IS NOT DISTINCT FROM t.county_code
+    AND h.census_tract_number IS NOT DISTINCT FROM t.census_tract_number;
