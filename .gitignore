@@ -2,3 +2,9 @@
 # HMDA raw data
 *.csv
 *.csv.gz
+
+#API key
+.env
+
+#virtual env
+venv/
