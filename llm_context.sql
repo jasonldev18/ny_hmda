@@ -1,39 +1,40 @@
--- SCHEMA: Respodent_info
--- Contains respondent information including agency and edit status
+-- SCHEMA: Respondent_info
+-- Contains information about the financial institution reporting the mortgage application
 CREATE SCHEMA Respondent_info;
 
--- contains info on agency overseeing the lender
+-- Government agency that oversees the lender reporting the application
+-- agency_code: 1=OCC, 2=FRS, 3=FDIC, 5=NCUA, 7=HUD, 9=CFPB
 CREATE TABLE Respondent_info.agency(
 agency_code INT PRIMARY KEY,
 agency_name TEXT,
 agency_abbr TEXT
 );
 
--- info on status of validity check of application
+-- Indicates whether the application record passed data validation checks
+-- edit_status: NULL=no failures, 5=validity failure, 6=quality failure, 7=both failures
 CREATE TABLE Respondent_info.edit_status(
 edit_status INT PRIMARY KEY,
 edit_status_name TEXT
 );
 
--- SCHEMA: Property location
--- Contains property location information including msamd, state, county, and tract
+-- SCHEMA: Property_location
+-- Contains geographic information about where the property is located
 CREATE SCHEMA Property_location;
 
--- geographic metro area where the property is located
+-- Metropolitan Statistical Area where the property is located (e.g. New York-Newark-Jersey City)
 CREATE TABLE Property_location.msamd(
 msamd INT PRIMARY KEY,
 msamd_name TEXT
 );
 
--- state where property is located, parent of county
+-- State where the property is located, parent of county
 CREATE TABLE Property_location.state(
 state_code INT PRIMARY KEY,
 state_name TEXT,
 state_abbr TEXT
 );
 
-
--- county of property location, belongs to a state
+-- County where the property is located, belongs to a state
 CREATE TABLE Property_location.county_code(
 county_code INT PRIMARY KEY,
 county_name TEXT,
@@ -43,7 +44,8 @@ CONSTRAINT fk_state_code
     REFERENCES Property_location.state(state_code)
 );
 
--- characteristics of census tract property is located in
+-- Census tract level neighborhood characteristics for the property location
+-- Contains demographic and economic data: population, minority %, median income, housing units
 CREATE TABLE Property_location.tract(
 location_id SERIAL PRIMARY KEY, 
 msamd INT,
@@ -58,70 +60,80 @@ number_of_owner_occupied_units INT,
 number_of_1_to_4_family_units INT
 );
 
--- SCHEMA: Loan Info
--- Contains loan type, property, purpose, owner occupancy, preapproval, and action taken info
+-- SCHEMA: Loan_info
+-- Contains information about the loan itself including type, purpose, and outcome
 CREATE SCHEMA Loan_info;
 
--- type of loan being taken
+-- Type of loan being applied for
+-- loan_type: 1=Conventional, 2=FHA-insured, 3=VA-guaranteed, 4=FSA/RHS
 CREATE TABLE Loan_info.loan_type(
 Loan_type INT PRIMARY KEY,
 Loan_type_name TEXT
 );
 
--- type of property that loan is being used for
+-- Type of property the loan is being used for
+-- property_type: 1=One-to-four family dwelling, 2=Manufactured housing, 3=Multifamily dwelling
 CREATE TABLE Loan_info.property(
 Property_type INT PRIMARY KEY,
 Property_type_name TEXT
 );
 
--- purpose of loan
+-- Purpose of the loan
+-- loan_purpose: 1=Home purchase, 2=Home improvement, 3=Refinancing
 CREATE TABLE Loan_info.purpose(
 Loan_purpose INT PRIMARY KEY,
 Loan_purpose_name TEXT
 );
 
--- status of owner occupany in property
+-- Whether the applicant intends to occupy the property as their primary residence
+-- owner_occupancy: 1=Owner-occupied, 2=Not owner-occupied, 3=Not applicable
 CREATE TABLE Loan_info.owner_occupancy(
 Owner_occupancy INT PRIMARY KEY,
 Owner_occupancy_name TEXT
 );
 
--- status of preapproval request if applicable
+-- Whether the applicant requested a preapproval before applying
+-- preapproval: 1=Preapproval requested, 2=Preapproval not requested, 3=Not applicable
 CREATE TABLE Loan_info.preapproval(
 Preapproval INT PRIMARY KEY,
 Preapproval_name TEXT
 );
 
--- status of loan
+-- Final outcome/status of the loan application
+-- action_taken: 1=Loan originated, 2=Approved but not accepted, 3=Denied, 4=Withdrawn, 5=File closed, 6=Loan purchased, 7=Preapproval denied, 8=Preapproval approved but not accepted
+-- Use action_taken_name = 'Application denied by financial institution' to filter for denials
 CREATE TABLE Loan_info.action_taken(
 Action_taken INT PRIMARY KEY,
 Action_taken_name TEXT
 );
 
--- SCHEMA: Application information
--- contains info on applicant's and co-applicant's ethnicity, race, and sex
+-- SCHEMA: Application_information
+-- Contains demographic information about the applicant and co-applicant
 CREATE SCHEMA Application_information;
 
--- checks if applicant is hispanic or latnio or not applicable
+-- Whether the applicant identifies as Hispanic or Latino
+-- applicant_ethnicity: 1=Hispanic or Latino, 2=Not Hispanic or Latino, 3=Information not provided, 4=Not applicable
 CREATE TABLE Application_information.applicant_ethnicity(
 Applicant_ethnicity INT PRIMARY KEY,
 Applicant_ethnicity_name TEXT
 );
 
--- checks if co-applicant is hispanic or latnio or not applicable
+-- Whether the co-applicant identifies as Hispanic or Latino
+-- co_applicant_ethnicity: 1=Hispanic or Latino, 2=Not Hispanic or Latino, 3=Information not provided, 4=Not applicable, 5=No co-applicant
 CREATE TABLE Application_information.co_applicant_ethnicity(
 Co_applicant_ethnicity INT PRIMARY KEY,
 Co_applicant_ethnicity_name TEXT
 );
 
-
--- unique race code, links to applicant and coapplicant's race
+-- Lookup table for race codes used by both applicant and co-applicant
+-- race_code: 1=American Indian or Alaska Native, 2=Asian, 3=Black or African American, 4=Native Hawaiian or Other Pacific Islander, 5=White, 6=Information not provided, 7=Not applicable
 CREATE TABLE Application_information.race(
 race_code INT PRIMARY KEY,
 race_name TEXT
 );
 
--- applicant's race info
+-- Applicant's race — supports multiple races per applicant via race_number (1-5)
+-- JOIN to Application_information.race on race_code to get race name
 CREATE TABLE Application_information.applicant_race(
 applicant_id INT,
 race_code INT,
@@ -130,7 +142,8 @@ PRIMARY KEY (applicant_id, race_number),
 FOREIGN KEY (race_code) REFERENCES Application_information.race(race_code)
 );
 
--- co-applicant's race info
+-- Co-applicant's race — supports multiple races per co-applicant via race_number (1-5)
+-- JOIN to Application_information.race on race_code to get race name
 CREATE TABLE Application_information.co_applicant_race(
 applicant_id INT,
 race_code INT,
@@ -139,69 +152,71 @@ PRIMARY KEY (applicant_id, race_number),
 FOREIGN KEY (race_code) REFERENCES Application_information.race(race_code)
 );
 
-
--- applicant's sex
+-- Applicant's sex
+-- applicant_sex: 1=Male, 2=Female, 3=Information not provided, 4=Not applicable
 CREATE TABLE Application_information.applicant_sex(
 Applicant_sex INT PRIMARY KEY,
 Applicant_sex_name TEXT
 );
 
--- coapplicant's sex
+-- Co-applicant's sex
+-- co_applicant_sex: 1=Male, 2=Female, 3=Information not provided, 4=Not applicable, 5=No co-applicant
 CREATE TABLE Application_information.co_applicant_sex(
 Co_applicant_sex INT PRIMARY KEY,
 Co_applicant_sex_name TEXT
 );
 
-
---SCHEMA: Purchaser and Denial Information
--- contains denial information type and reason for denial
+-- SCHEMA: Purchaser_and_denial_information
+-- Contains information about loan purchaser and reasons for denial if applicable
 CREATE SCHEMA Purchaser_and_denial_information;
 
-
--- type of purchaser
+-- Type of entity that purchased the loan after origination
+-- purchaser_type: 0=Loan was not sold, 1=Fannie Mae, 2=Ginnie Mae, 3=Freddie Mac, 4=Farmer Mac, 5=Private securitization, 6=Commercial bank, 7=Life insurance/credit union, 8=Affiliate, 9=Other
 CREATE TABLE Purchaser_and_denial_information.type(
 Purchaser_type INT PRIMARY KEY,
 Purchaser_type_name TEXT
 );
 
--- reason for denial number 1
+-- Primary reason for denial (if application was denied)
+-- denial_reason: 1=Debt-to-income ratio, 2=Employment history, 3=Credit history, 4=Collateral, 5=Insufficient cash, 6=Unverifiable information, 7=Credit application incomplete, 8=Mortgage insurance denied, 9=Other
 CREATE TABLE Purchaser_and_denial_information.denial_reason_1(
 Denial_reason_1 INT PRIMARY KEY,
 Denial_reason_name_1 TEXT
 ); 
 
--- reason for denial number 2
+-- Secondary reason for denial if applicable
 CREATE TABLE Purchaser_and_denial_information.denial_reason_2(
 Denial_reason_2 INT PRIMARY KEY,
 Denial_reason_name_2 TEXT
 );
 
--- reason for denial number 3
+-- Tertiary reason for denial if applicable
 CREATE TABLE Purchaser_and_denial_information.denial_reason_3(
 Denial_reason_3 INT PRIMARY KEY,
 Denial_reason_name_3 TEXT
 );
 
-
---SCHEMA: Other
--- contains information on HOEPA and Lien status
+-- SCHEMA: Other
+-- Contains additional loan classification information
 CREATE SCHEMA Other;
 
--- checks if it's a HOEPA loan
+-- Whether the loan is subject to HOEPA (Home Ownership and Equity Protection Act) — high cost loan indicator
+-- hoepa_status: 1=HOEPA loan, 2=Not a HOEPA loan
 CREATE TABLE Other.hoepa_status(
 Hoepa_status INT PRIMARY KEY,
 Hoepa_status_name TEXT
 );
 
--- checks if its secured by a lien
+-- Whether the loan is secured by a lien on the property
+-- lien_status: 1=First lien, 2=Second lien, 3=Not secured by lien, 4=Not applicable
 CREATE TABLE Other.lien_status(
 Lien_status INT PRIMARY KEY,
 Lien_status_name TEXT
 );
 
-
-
 -- MAIN APPLICATION TABLE
+-- Central fact table — ties all schemas together, one row per mortgage application
+-- Use this table as the base for all queries, joining to lookup tables via foreign keys
 CREATE TABLE application (
     id INT PRIMARY KEY,
     as_of_year INT,
@@ -231,5 +246,3 @@ CREATE TABLE application (
     sequence_number INT,
     application_date_indicator INT
 );
-
-

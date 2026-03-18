@@ -67,6 +67,7 @@ def handle_query(request: QueryRequest):
     sql_query = message.content[0].text
     sql_query = sql_query.strip()
     sql_query = sql_query.replace("```sql", "").replace("```", "").strip()
+    print("Generated SQL:", sql_query)
 
     #runs SQl against postgres
     #cursor will execute queries onto db connection
@@ -80,7 +81,7 @@ def handle_query(request: QueryRequest):
     
 
     #converts SQL response to plain English
-    response_prompt = f"You are a SQL-to-text expert.\n\nQuestion: {request.question}\n\n Given the answer {results} to the question, convert the SQL output into plain English. Answer the question directly and concisely."
+    response_prompt = f"You are a SQL-to-text expert.\n\nQuestion: {request.question}\n\n Given the answer {results} to the question, convert the SQL output into plain English. Answer the question directly and concisely. Don't start response with unnecessary text like 'Based on the SQL...'."
 
     response = client.messages.create(
         model="claude-sonnet-4-20250514",
